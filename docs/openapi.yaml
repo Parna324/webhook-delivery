@@ -1,0 +1,175 @@
+openapi: 3.0.3
+info:
+  title: Production Webhook Delivery Platform API
+  description: High-throughput, resilient webhook delivery engine with HMAC signing, idempotency, exponential backoff, and circuit breakers.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000/v1
+    description: Local Development Server
+
+paths:
+  /customers:
+    post:
+      summary: Onboard new customer and issue initial API key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email]
+              properties:
+                name:
+                  type: string
+                  example: "Acme Payments"
+                email:
+                  type: string
+                  format: email
+                  example: "dev@acme.com"
+      responses:
+        '201':
+          description: Customer onboarded successfully. Returns raw API key once.
+
+  /me:
+    get:
+      summary: Get current authenticated customer details
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Authenticated customer profile
+        '401':
+          description: Unauthorized
+
+  /endpoints:
+    post:
+      summary: Register a new webhook endpoint
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  example: "https://api.example.com/webhooks"
+                description:
+                  type: string
+                  example: "Primary billing consumer"
+                eventTypes:
+                  type: array
+                  items:
+                    type: string
+                  example: ["payment.succeeded", "order.created"]
+                rateLimitPerSecond:
+                  type: integer
+                  default: 50
+      responses:
+        '201':
+          description: Endpoint created
+        '400':
+          description: Invalid URL or SSRF private IP blocked
+    get:
+      summary: List registered endpoints
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: List of endpoints
+
+  /endpoints/{id}/rotate-secret:
+    post:
+      summary: Rotate HMAC-SHA256 signing secret
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: New signing secret generated
+
+  /events:
+    post:
+      summary: Ingest webhook event with atomic Idempotency-Key
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema:
+            type: string
+          description: Unique client key ensuring no duplicate deliveries.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [eventType, payload]
+              properties:
+                eventType:
+                  type: string
+                  example: "payment.succeeded"
+                payload:
+                  type: object
+                  example:
+                    orderId: "ord_12345"
+                    amount: 9900
+      responses:
+        '202':
+          description: Accepted for asynchronous delivery
+        '422':
+          description: Idempotency key reused with different payload
+        '429':
+          description: Rate limit exceeded
+
+  /deliveries:
+    get:
+      summary: List delivery records with status filtering
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [PENDING, PROCESSING, SUCCESS, FAILED, DEAD_LETTER]
+        - in: query
+          name: endpointId
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deliveries list
+
+  /deliveries/{id}/replay:
+    post:
+      summary: Manually replay a failed or dead-letter delivery
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Delivery re-enqueued for retry
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key

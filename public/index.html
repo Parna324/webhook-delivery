@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Webhook Delivery Platform | Control Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(18, 24, 38, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent-primary: #6366f1;
+      --accent-glow: rgba(99, 102, 241, 0.25);
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.08) 0px, transparent 50%);
+      color: var(--text);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    header {
+      border-bottom: 1px solid var(--card-border);
+      background: rgba(9, 13, 22, 0.85);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      color: #fff;
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .brand-tag {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      background: rgba(99, 102, 241, 0.2);
+      color: #818cf8;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      font-weight: 600;
+      margin-left: 0.5rem;
+    }
+
+    .auth-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 0.35rem 0.75rem;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+    }
+    .auth-bar input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      width: 280px;
+    }
+    .btn {
+      background: #272f45;
+      color: #fff;
+      border: 1px solid var(--card-border);
+      padding: 0.45rem 0.9rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .btn:hover { background: #323b56; transform: translateY(-1px); }
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      border-color: #4f46e5;
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #4f46e5, #4338ca);
+      box-shadow: 0 4px 12px var(--accent-glow);
+    }
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+    .btn-danger:hover { background: rgba(239, 68, 68, 0.25); }
+
+    main {
+      max-width: 1350px;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    }
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.4rem;
+    }
+    .stat-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+    }
+    .stat-indicator {
+      font-size: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      margin-top: 0.3rem;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 1px solid var(--card-border);
+      margin-bottom: 1.5rem;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 0.75rem 1.25rem;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      position: relative;
+      transition: color 0.2s;
+    }
+    .tab-btn.active {
+      color: #fff;
+    }
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--accent-primary);
+      box-shadow: 0 0 8px var(--accent-primary);
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+    th, td {
+      padding: 0.85rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--card-border);
+    }
+    th {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+    .badge-success { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-warning { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-danger { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .badge-info { background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+      font-weight: 500;
+    }
+    .form-input, .form-textarea, .form-select {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      color: #fff;
+      padding: 0.55rem 0.8rem;
+      font-family: inherit;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-input:focus, .form-textarea:focus, .form-select:focus {
+      border-color: var(--accent-primary);
+    }
+    .form-textarea {
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      min-height: 110px;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      display: none;
+      place-items: center;
+      z-index: 100;
+    }
+    .modal-backdrop.show { display: grid; }
+    .modal-content {
+      background: #111726;
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      max-width: 650px;
+      width: 90%;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 1.5rem;
+    }
+
+    .code-block {
+      background: rgba(0, 0, 0, 0.4);
+      padding: 0.75rem;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: #cbd5e1;
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-icon">⚡</div>
+      <div>
+        <span class="brand-title">Webhook Delivery</span>
+        <span class="brand-tag">Production Engine</span>
+      </div>
+    </div>
+
+    <div class="auth-bar">
+      <span style="font-size: 0.8rem; color: var(--text-muted);">API Key:</span>
+      <input type="password" id="apiKeyInput" placeholder="wh_live_..." autocomplete="off">
+      <button class="btn btn-primary" onclick="saveApiKey()">Save</button>
+      <button class="btn" onclick="testConnection()">Test Connection</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Events Ingested</div>
+        <div class="stat-value" id="statEventsCount">0</div>
+        <div class="stat-indicator" style="color: #34d399;">● Real-time stream</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Active Endpoints</div>
+        <div class="stat-value" id="statEndpointsCount">0</div>
+        <div class="stat-indicator" style="color: #818cf8;">Registered targets</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Deliveries Succeeded</div>
+        <div class="stat-value" id="statSuccessCount" style="color: #34d399;">0</div>
+        <div class="stat-indicator" style="color: #34d399;">2xx Verified</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Dead-Letter Queue</div>
+        <div class="stat-value" id="statDeadLetterCount" style="color: #f87171;">0</div>
+        <div class="stat-indicator" style="color: #f87171;">Requires replay</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('endpoints')">Webhook Endpoints</button>
+      <button class="tab-btn" onclick="switchTab('simulator')">Event Ingest Simulator</button>
+      <button class="tab-btn" onclick="switchTab('deliveries')">Delivery Logs & Replay</button>
+      <button class="tab-btn" onclick="switchTab('events')">Events Stream</button>
+    </div>
+
+    <!-- TAB 1: ENDPOINTS -->
+    <div id="tab-endpoints" class="tab-content">
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h3>Registered Webhook Endpoints</h3>
+          <button class="btn btn-primary" onclick="showCreateEndpointModal()">+ Add Endpoint</button>
+        </div>
+        <table id="endpointsTable">
+          <thead>
+            <tr>
+              <th>Destination URL</th>
+              <th>Event Filters</th>
+              <th>Status</th>
+              <th>Circuit</th>
+              <th>Signing Secret</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="endpointsBody">
+            <tr><td colspan="6" style="text-align:center; color: var(--text-muted);">Loading endpoints...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 2: INGEST SIMULATOR -->
+    <div id="tab-simulator" class="tab-content" style="display:none;">
+      <div class="card" style="max-width: 800px; margin: 0 auto;">
+        <h3 style="margin-bottom: 0.5rem;">Ingest Webhook Event</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+          Sends a payload to <code>POST /v1/events</code> with an <code>Idempotency-Key</code>. Tests fan-out delivery and double-spend deduplication.
+        </p>
+
+        <div class="form-group">
+          <label>Idempotency-Key Header</label>
+          <div style="display: flex; gap: 0.5rem;">
+            <input type="text" class="form-input" id="simIdempotencyKey">
+            <button class="btn" onclick="generateNewIdempotencyKey()">Generate New</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Event Type</label>
+          <input type="text" class="form-input" id="simEventType" value="payment.succeeded">
+        </div>
+
+        <div class="form-group">
+          <label>JSON Payload</label>
+          <textarea class="form-textarea" id="simPayload">{
+  "id": "evt_98374298",
+  "amount": 4900,
+  "currency": "usd",
+  "customer": "cus_123456",
+  "status": "paid",
+  "timestamp": 1728800000
+}</textarea>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem;">
+          <button class="btn btn-primary" onclick="dispatchSimulatedEvent()">🚀 Ingest Event (POST /v1/events)</button>
+          <span id="simResultPill"></span>
+        </div>
+
+        <div id="simResponseBox" style="margin-top: 1rem; display: none;">
+          <label style="font-size: 0.75rem; color: var(--text-muted);">API Server Response:</label>
+          <div class="code-block" id="simResponseBody"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: DELIVERIES & REPLAY -->
+    <div id="tab-deliveries" class="tab-content" style="display:none;">
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h3>Delivery Logs & Dead-Letter Replay</h3>
+          <div style="display: flex; gap: 0.5rem;">
+            <select class="form-select" id="filterStatus" onchange="loadDeliveries()" style="width: auto;">
+              <option value="">All Statuses</option>
+              <option value="DEAD_LETTER">DEAD_LETTER Only</option>
+              <option value="FAILED">FAILED Only</option>
+              <option value="SUCCESS">SUCCESS Only</option>
+              <option value="PENDING">PENDING Only</option>
+            </select>
+            <button class="btn" onclick="loadDeliveries()">Refresh</button>
+          </div>
+        </div>
+        <table id="deliveriesTable">
+          <thead>
+            <tr>
+              <th>Delivery ID</th>
+              <th>Event Type</th>
+              <th>Endpoint URL</th>
+              <th>Status</th>
+              <th>Attempts</th>
+              <th>Last Latency</th>
+              <th>Timestamp</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="deliveriesBody">
+            <tr><td colspan="8" style="text-align:center; color: var(--text-muted);">Loading delivery history...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 4: EVENTS -->
+    <div id="tab-events" class="tab-content" style="display:none;">
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h3>Historical Ingested Events</h3>
+          <button class="btn" onclick="loadEvents()">Refresh</button>
+        </div>
+        <table id="eventsTable">
+          <thead>
+            <tr>
+              <th>Event ID</th>
+              <th>Event Type</th>
+              <th>Fan-out Destinations</th>
+              <th>Ingest Time</th>
+            </tr>
+          </thead>
+          <tbody id="eventsBody">
+            <tr><td colspan="4" style="text-align:center; color: var(--text-muted);">Loading events...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Create Endpoint Modal -->
+  <div class="modal-backdrop" id="createEndpointModal">
+    <div class="modal-content">
+      <h3 style="margin-bottom: 1rem;">Register Webhook Endpoint</h3>
+      <div class="form-group">
+        <label>Destination URL</label>
+        <input type="url" class="form-input" id="modalUrl" placeholder="https://api.example.com/webhooks">
+      </div>
+      <div class="form-group">
+        <label>Description (Optional)</label>
+        <input type="text" class="form-input" id="modalDesc" placeholder="Primary payments consumer">
+      </div>
+      <div class="form-group">
+        <label>Event Types Filter (Comma separated, or * for all)</label>
+        <input type="text" class="form-input" id="modalEventTypes" value="*">
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.5rem;">
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="submitCreateEndpoint()">Save Endpoint</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delivery Details Modal -->
+  <div class="modal-backdrop" id="deliveryDetailsModal">
+    <div class="modal-content">
+      <h3 style="margin-bottom: 1rem;">Delivery Inspection & Attempts</h3>
+      <div id="deliveryDetailsContent"></div>
+      <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem;">
+        <button class="btn" onclick="closeDeliveryModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '/v1';
+    let currentApiKey = localStorage.getItem('webhook_api_key') || '';
+
+    if (currentApiKey) {
+      document.getElementById('apiKeyInput').value = currentApiKey;
+    }
+
+    function saveApiKey() {
+      const val = document.getElementById('apiKeyInput').value.trim();
+      currentApiKey = val;
+      localStorage.setItem('webhook_api_key', val);
+      alert('API Key saved.');
+      refreshAll();
+    }
+
+    function getHeaders() {
+      return {
+        'Content-Type': 'application/json',
+        'x-api-key': currentApiKey,
+      };
+    }
+
+    async function testConnection() {
+      if (!currentApiKey) {
+        alert('Please paste a valid API key (starts with wh_live_) first.');
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE}/me`, { headers: getHeaders() });
+        const json = await res.json();
+        if (res.ok) {
+          alert(`Connected as customer: ${json.data.customer.name} (${json.data.customer.email})`);
+          refreshAll();
+        } else {
+          alert(`Authentication failed: ${json.error?.message || 'Invalid key'}`);
+        }
+      } catch (err) {
+        alert(`Connection failed: ${err.message}`);
+      }
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+
+      document.querySelector(`[onclick="switchTab('${tab}')"]`).classList.add('active');
+      document.getElementById(`tab-${tab}`).style.display = 'block';
+
+      if (tab === 'endpoints') loadEndpoints();
+      if (tab === 'deliveries') loadDeliveries();
+      if (tab === 'events') loadEvents();
+    }
+
+    function generateNewIdempotencyKey() {
+      document.getElementById('simIdempotencyKey').value = 'idemp_' + Math.random().toString(36).substring(2, 12);
+    }
+    generateNewIdempotencyKey();
+
+    async function refreshAll() {
+      loadEndpoints();
+      loadDeliveries();
+      loadEvents();
+    }
+
+    async function loadEndpoints() {
+      if (!currentApiKey) return;
+      try {
+        const res = await fetch(`${API_BASE}/endpoints`, { headers: getHeaders() });
+        const json = await res.json();
+        if (!res.ok) return;
+
+        const endpoints = json.data || [];
+        document.getElementById('statEndpointsCount').innerText = endpoints.length;
+
+        const tbody = document.getElementById('endpointsBody');
+        if (endpoints.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">No endpoints registered yet. Click "+ Add Endpoint" to register one.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = endpoints.map(ep => `
+          <tr>
+            <td>
+              <div style="font-weight:600;">${ep.url}</div>
+              <div style="font-size:0.75rem; color:var(--text-muted);">${ep.description || 'No description'}</div>
+            </td>
+            <td><code>${(ep.eventTypes || ['*']).join(', ')}</code></td>
+            <td>
+              <span class="badge ${ep.enabled ? 'badge-success' : 'badge-danger'}">
+                ${ep.enabled ? 'Active' : 'Disabled'}
+              </span>
+            </td>
+            <td>
+              <span class="badge ${ep.circuitStatus === 'CLOSED' ? 'badge-success' : ep.circuitStatus === 'OPEN' ? 'badge-danger' : 'badge-warning'}">
+                ${ep.circuitStatus}
+              </span>
+            </td>
+            <td>
+              <div style="display:flex; align-items:center; gap:0.4rem;">
+                <code style="font-size:0.75rem;">${ep.secret.slice(0, 10)}...</code>
+                <button class="btn" style="padding:0.2rem 0.4rem; font-size:0.7rem;" onclick="navigator.clipboard.writeText('${ep.secret}'); alert('Secret copied!');">Copy</button>
+              </div>
+            </td>
+            <td>
+              <div style="display:flex; gap:0.4rem;">
+                <button class="btn" style="padding:0.25rem 0.5rem; font-size:0.75rem;" onclick="rotateSecret('${ep.id}')">Rotate</button>
+                <button class="btn btn-danger" style="padding:0.25rem 0.5rem; font-size:0.75rem;" onclick="deleteEndpoint('${ep.id}')">Delete</button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function loadDeliveries() {
+      if (!currentApiKey) return;
+      try {
+        const statusFilter = document.getElementById('filterStatus').value;
+        const url = `${API_BASE}/deliveries${statusFilter ? '?status=' + statusFilter : ''}`;
+        const res = await fetch(url, { headers: getHeaders() });
+        const json = await res.json();
+        if (!res.ok) return;
+
+        const deliveries = json.data || [];
+        let deadCount = 0;
+        let successCount = 0;
+        deliveries.forEach(d => {
+          if (d.status === 'DEAD_LETTER') deadCount++;
+          if (d.status === 'SUCCESS') successCount++;
+        });
+        document.getElementById('statDeadLetterCount').innerText = deadCount;
+        document.getElementById('statSuccessCount').innerText = successCount;
+
+        const tbody = document.getElementById('deliveriesBody');
+        if (deliveries.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color: var(--text-muted);">No deliveries matching filter.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = deliveries.map(d => {
+          const latestAttempt = d.attempts?.[0];
+          return `
+            <tr>
+              <td><code style="font-size:0.75rem;">${d.id.slice(0, 8)}...</code></td>
+              <td><b>${d.event?.eventType || '-'}</b></td>
+              <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${d.endpoint?.url || '-'}</td>
+              <td>
+                <span class="badge ${d.status === 'SUCCESS' ? 'badge-success' : d.status === 'DEAD_LETTER' ? 'badge-danger' : d.status === 'PENDING' ? 'badge-warning' : 'badge-info'}">
+                  ${d.status}
+                </span>
+              </td>
+              <td>${d.attemptCount} / ${d.maxAttempts}</td>
+              <td>${latestAttempt ? latestAttempt.latencyMs + 'ms' : '-'}</td>
+              <td style="font-size:0.78rem; color:var(--text-muted);">${new Date(d.createdAt).toLocaleTimeString()}</td>
+              <td>
+                <div style="display:flex; gap:0.4rem;">
+                  <button class="btn" style="padding:0.25rem 0.5rem; font-size:0.75rem;" onclick="viewDeliveryDetails('${d.id}')">Inspect</button>
+                  ${d.status === 'DEAD_LETTER' || d.status === 'FAILED' ? `
+                    <button class="btn btn-primary" style="padding:0.25rem 0.5rem; font-size:0.75rem;" onclick="replayDelivery('${d.id}')">Replay</button>
+                  ` : ''}
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function loadEvents() {
+      if (!currentApiKey) return;
+      try {
+        const res = await fetch(`${API_BASE}/events`, { headers: getHeaders() });
+        const json = await res.json();
+        if (!res.ok) return;
+
+        const events = json.data || [];
+        document.getElementById('statEventsCount').innerText = events.length;
+
+        const tbody = document.getElementById('eventsBody');
+        if (events.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color: var(--text-muted);">No events ingested yet.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = events.map(e => `
+          <tr>
+            <td><code style="font-size:0.75rem;">${e.id}</code></td>
+            <td><b>${e.eventType}</b></td>
+            <td>
+              <div style="display:flex; flex-wrap:wrap; gap:0.3rem;">
+                ${(e.deliveries || []).map(d => `
+                  <span class="badge ${d.status === 'SUCCESS' ? 'badge-success' : d.status === 'DEAD_LETTER' ? 'badge-danger' : 'badge-warning'}">
+                    ${d.status}
+                  </span>
+                `).join('')}
+              </div>
+            </td>
+            <td style="font-size:0.78rem; color:var(--text-muted);">${new Date(e.createdAt).toLocaleString()}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function dispatchSimulatedEvent() {
+      if (!currentApiKey) {
+        alert('Please enter your API Key in the top header.');
+        return;
+      }
+      const idempotencyKey = document.getElementById('simIdempotencyKey').value.trim();
+      const eventType = document.getElementById('simEventType').value.trim();
+      let payload;
+      try {
+        payload = JSON.parse(document.getElementById('simPayload').value);
+      } catch {
+        alert('Malformed JSON payload');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/events`, {
+          method: 'POST',
+          headers: {
+            ...getHeaders(),
+            'Idempotency-Key': idempotencyKey,
+          },
+          body: JSON.stringify({ eventType, payload }),
+        });
+        const json = await res.json();
+
+        document.getElementById('simResponseBox').style.display = 'block';
+        document.getElementById('simResponseBody').innerText = JSON.stringify(json, null, 2);
+
+        const pill = document.getElementById('simResultPill');
+        if (res.status === 202) {
+          pill.innerHTML = '<span class="badge badge-success">202 Accepted</span>';
+        } else {
+          pill.innerHTML = `<span class="badge badge-danger">${res.status} Error</span>`;
+        }
+
+        setTimeout(() => {
+          loadEvents();
+          loadDeliveries();
+        }, 800);
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function replayDelivery(id) {
+      try {
+        const res = await fetch(`${API_BASE}/deliveries/${id}/replay`, {
+          method: 'POST',
+          headers: getHeaders(),
+        });
+        const json = await res.json();
+        if (res.ok) {
+          alert('Delivery replayed successfully! Workers will retry immediately.');
+          loadDeliveries();
+        } else {
+          alert(`Replay error: ${json.error?.message || 'Failed'}`);
+        }
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function viewDeliveryDetails(id) {
+      try {
+        const res = await fetch(`${API_BASE}/deliveries/${id}`, { headers: getHeaders() });
+        const json = await res.json();
+        if (!res.ok) return;
+
+        const d = json.data;
+        const container = document.getElementById('deliveryDetailsContent');
+        container.innerHTML = `
+          <div style="margin-bottom:1rem;">
+            <div><b>Target URL:</b> ${d.endpoint?.url}</div>
+            <div><b>Status:</b> <span class="badge ${d.status === 'SUCCESS' ? 'badge-success' : 'badge-danger'}">${d.status}</span></div>
+            <div><b>Total Attempts:</b> ${d.attemptCount} of ${d.maxAttempts}</div>
+          </div>
+          <h4>Historical Attempts Audit Log (${d.attempts?.length || 0}):</h4>
+          <div style="margin-top:0.5rem; display:flex; flex-direction:column; gap:0.75rem;">
+            ${(d.attempts || []).map(att => `
+              <div style="background:rgba(0,0,0,0.3); border:1px solid var(--card-border); padding:0.75rem; border-radius:6px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:0.3rem;">
+                  <b>Attempt #${att.attemptNumber}</b>
+                  <span class="badge ${att.success ? 'badge-success' : 'badge-danger'}">${att.success ? 'HTTP ' + att.statusCode : (att.error || 'Failed')}</span>
+                </div>
+                <div style="font-size:0.75rem; color:var(--text-muted);">Latency: ${att.latencyMs}ms | Time: ${new Date(att.createdAt).toLocaleTimeString()}</div>
+                ${att.responseBodySnippet ? `
+                  <div style="margin-top:0.5rem;">
+                    <span style="font-size:0.7rem; color:var(--text-muted);">Response Snippet:</span>
+                    <pre class="code-block" style="margin-top:0.2rem;">${att.responseBodySnippet}</pre>
+                  </div>
+                ` : ''}
+              </div>
+            `).join('')}
+          </div>
+        `;
+        document.getElementById('deliveryDetailsModal').classList.add('show');
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    function showCreateEndpointModal() {
+      document.getElementById('createEndpointModal').classList.add('show');
+    }
+    function closeModal() {
+      document.getElementById('createEndpointModal').classList.remove('show');
+    }
+    function closeDeliveryModal() {
+      document.getElementById('deliveryDetailsModal').classList.remove('show');
+    }
+
+    async function submitCreateEndpoint() {
+      const url = document.getElementById('modalUrl').value.trim();
+      const description = document.getElementById('modalDesc').value.trim();
+      const eventTypesRaw = document.getElementById('modalEventTypes').value.trim();
+      const eventTypes = eventTypesRaw.split(',').map(s => s.trim()).filter(Boolean);
+
+      try {
+        const res = await fetch(`${API_BASE}/endpoints`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ url, description, eventTypes }),
+        });
+        const json = await res.json();
+        if (res.ok) {
+          alert('Webhook endpoint registered successfully!');
+          closeModal();
+          loadEndpoints();
+        } else {
+          alert(`Error: ${json.error?.message || 'Failed'}`);
+        }
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function rotateSecret(id) {
+      if (!confirm('Are you sure you want to rotate the HMAC secret? The receiver will reject deliveries until updated with the new secret.')) return;
+      try {
+        const res = await fetch(`${API_BASE}/endpoints/${id}/rotate-secret`, {
+          method: 'POST',
+          headers: getHeaders(),
+        });
+        const json = await res.json();
+        if (res.ok) {
+          alert(`Secret rotated! New secret: ${json.data.secret}`);
+          loadEndpoints();
+        }
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function deleteEndpoint(id) {
+      if (!confirm('Delete this endpoint?')) return;
+      try {
+        await fetch(`${API_BASE}/endpoints/${id}`, {
+          method: 'DELETE',
+          headers: getHeaders(),
+        });
+        loadEndpoints();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    if (currentApiKey) {
+      refreshAll();
+    }
+  </script>
+</body>
+</html>
